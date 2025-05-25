@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Monitoring System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Water Monitoring Dashboard</h1>
+        <div class="sensors-container">
+            <div class="sensor-box" id="water-level">
+                <h2>Water Level</h2>
+                <div class="value">-- cm</div>
+            </div>
+            <div class="sensor-box" id="turbidity">
+                <h2>Turbidity</h2>
+                <div class="value">-- NTU</div>
+            </div>
+            <div class="sensor-box" id="motor-status">
+                <h2>Motor Status</h2>
+                <div class="value">--</div>
+            </div>
+            <div class="sensor-box" id="water-used">
+                <h2>Water Used</h2>
+                <div class="value">-- L</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - replace with your actual Airtable details
+        const AIRTABLE_BASE_ID = 'appJWOw1LQOyDmsTw'; // Replace with your base ID
+        const AIRTABLE_TABLE_NAME = 'WaterData'; // Replace with your table name
+        const AIRTABLE_PAT = 'patpmTuDVC1e9goFZ.16a79b02c75f9ef7a79e745d86dc4e0e4283dcf206e53c89c79f64a64445561f'; // Replace with your Personal Access Token
+        
+        // API endpoint
+        const AIRTABLE_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
+
+        // Function to fetch data from Airtable
+        async function fetchData() {
+            try {
+                const response = await fetch(AIRTABLE_URL, {
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_PAT}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.records && data.records.length > 0) {
+                    // Assuming we're using the first record
+                    const record = data.records[0].fields;
+                    updateDashboard(record);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Function to update the dashboard with new data
+        function updateDashboard(data) {
+            // Water Level
+            const waterLevel = data.WaterLevel || 0;
+            const waterLevelBox = document.getElementById('water-level');
+            const waterLevelValue = waterLevelBox.querySelector('.value');
+            waterLevelValue.textContent = `${waterLevel} cm`;
+            
+            if (waterLevel > 15) {
+                waterLevelBox.style.backgroundColor = '#ff6b6b'; // Red
+            } else {
+                waterLevelBox.style.backgroundColor = '#51cf66'; // Green
+            }
+
+            // Turbidity
+            const turbidity = data.Turbidity || 0;
+            const turbidityBox = document.getElementById('turbidity');
+            const turbidityValue = turbidityBox.querySelector('.value');
+            turbidityValue.textContent = `${turbidity} NTU`;
+            
+            if (turbidity < 600) {
+                turbidityBox.style.backgroundColor = '#51cf66'; // Green
+            } else {
+                turbidityBox.style.backgroundColor = '#ff6b6b'; // Red
+            }
+
+            // Motor Status
+            const motorStatus = data.RelayStatus || 0;
+            const motorStatusBox = document.getElementById('motor-status');
+            const motorStatusValue = motorStatusBox.querySelector('.value');
+            
+            if (motorStatus === 1) {
+                motorStatusValue.textContent = 'ON';
+                motorStatusBox.style.backgroundColor = '#51cf66'; // Green
+            } else {
+                motorStatusValue.textContent = 'OFF';
+                motorStatusBox.style.backgroundColor = '#ff6b6b'; // Red
+            }
+
+            // Water Used
+            const waterUsed = data.WaterUsed || 0;
+            const waterUsedBox = document.getElementById('water-used');
+            const waterUsedValue = waterUsedBox.querySelector('.value');
+            waterUsedValue.textContent = `${waterUsed} L`;
+            waterUsedBox.style.backgroundColor = '#339af0'; // Blue
+        }
+
+        // Fetch data immediately when page loads
+        document.addEventListener('DOMContentLoaded', fetchData);
+
+        // Then fetch data every 5 seconds
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>
